@@ -1,15 +1,15 @@
-//  NLS-Next by NotMithical
-//  https://github.com/NotMithical/MPV-NLS-Next/blob/main/NLS-Next.glsl
+//	NLS-Next by NotMithical
+//	https://github.com/NotMithical/MPV-NLS-Next/blob/main/NLS-Next.glsl
 //
 // --Parameters Summary --
 // HorizontalStretch and VerticalStretch:
-//      Adjust balance between Horizontal and Vertical Stretching. Values will be normalized to total to 1.0, otherwise distortion will occur in the center of the image.
+//		Adjust balance between Horizontal and Vertical Stretching. Values will be normalized to total to 1.0, otherwise distortion will occur in the center of the image.
 // CropAmount:
-//      Crop image edges. Raising this value results in loss of content but results in less stretching.
+//		Crop image edges. Raising this value results in loss of content but results in less stretching.
 // BarsAmount:
-//      Scale the image down and add padding in the form of black bars. Raising this value results in less stretching.
+//		Scale the image down and add padding in the form of black bars. Raising this value results in less stretching.
 // CenterProtect:
-//      Changes the curve for stretching. Higher values apply more stretching towards the edges of the screen. Currently experimental; I'm still figuring out the math for this whole thing and it turns out the padding, cropping, and center protection affect each other a fair bit.
+//		Changes the curve for stretching. Higher values apply more stretching towards the edges of the screen. Currently experimental; I'm still figuring out the math for this whole thing and it turns out the padding, cropping, and center protection affect each other a fair bit.
 //
 // dest_height & dest_width are set by the NLS-Next.lua helper script. Changing their values here will have no effect.
 //
@@ -57,22 +57,10 @@
 //!MAXIMUM 99999
 0
 
-//!PARAM src_width
-//!TYPE int
-//!MINIMUM 0
-//!MAXIMUM 99999
-0
-
-//!PARAM src_height
-//!TYPE int
-//!MINIMUM 0
-//!MAXIMUM 99999
-0
-
 //!HOOK MAIN
 //!BIND HOOKED
 //!HEIGHT dest_height
-//!WHEN dest_height src_height > OUTPUT.w OUTPUT.h / dest_width dest_height / = ! *
+//!WHEN dest_height MAIN.h > OUTPUT.w OUTPUT.h / dest_width dest_height / = ! *
 //!DESC NLS-Next Prescale Vert
 
 #define R 3.0 //kernel radius, (0.0, 10.0+]
@@ -116,7 +104,7 @@ vec4 hook() {
 //!HOOK MAIN
 //!BIND HOOKED
 //!WIDTH dest_width
-//!WHEN dest_width src_width > OUTPUT.w OUTPUT.h / dest_width dest_height / = ! *
+//!WHEN dest_width MAIN.w > OUTPUT.w OUTPUT.h / dest_width dest_height / = ! *
 //!DESC NLS-Next Prescale Horiz
 
 #define R 3.0 //kernel radius, (0.0, 10.0+]
@@ -164,34 +152,34 @@ vec4 hook() {
 //!DESC NLS-Next Stretch
 
 vec2 stretch(vec2 pos, float h_par, float v_par) {
-    // Normalize user defined parameters
-    float HorizontalStretchNorm = (HorizontalStretch * (1 / (HorizontalStretch + VerticalStretch))),
-          VerticalStretchNorm = (VerticalStretch * (1 / (HorizontalStretch + VerticalStretch)));
+	// Normalize user defined parameters
+	float HorizontalStretchNorm = (HorizontalStretch * (1 / (HorizontalStretch + VerticalStretch))),
+		  VerticalStretchNorm = (VerticalStretch * (1 / (HorizontalStretch + VerticalStretch)));
 
-    float h_m_stretch = pow(h_par, HorizontalStretchNorm),
-          v_m_stretch = pow(v_par, VerticalStretchNorm),
-          x = pos.x - 0.5,
-          y = pos.y - 0.5;
+	float h_m_stretch = pow(h_par, HorizontalStretchNorm),
+		  v_m_stretch = pow(v_par, VerticalStretchNorm),
+		  x = pos.x - 0.5,
+		  y = pos.y - 0.5;
 
-    // Map x & y coordinates to themselves with a curve, taking into account cropping and padding
-    if (h_par < 1) {
-        return vec2(mix(x * pow(abs(x), CenterProtect) * (pow(2, CenterProtect) - (CropAmount * 2)), x, h_m_stretch) + 0.5, mix(y * pow(abs(y), CenterProtect) * (pow(2, CenterProtect) - (BarsAmount * 5)), y, v_m_stretch) + 0.5);
-    } else {
-        return vec2(mix(x * pow(abs(x), CenterProtect) * (pow(2, CenterProtect) - (BarsAmount * 5)), x, h_m_stretch) + 0.5, mix(y * pow(abs(y), CenterProtect) * (pow(2, CenterProtect) - (CropAmount * 2)), y, v_m_stretch) + 0.5);
-    }
+	// Map x & y coordinates to themselves with a curve, taking into account cropping and padding
+	if (h_par < 1) {
+		return vec2(mix(x * pow(abs(x), CenterProtect) * (pow(2, CenterProtect) - (CropAmount * 2)), x, h_m_stretch) + 0.5, mix(y * pow(abs(y), CenterProtect) * (pow(2, CenterProtect) - (BarsAmount * 5)), y, v_m_stretch) + 0.5);
+	} else {
+		return vec2(mix(x * pow(abs(x), CenterProtect) * (pow(2, CenterProtect) - (BarsAmount * 5)), x, h_m_stretch) + 0.5, mix(y * pow(abs(y), CenterProtect) * (pow(2, CenterProtect) - (CropAmount * 2)), y, v_m_stretch) + 0.5);
+	}
 }
 
 vec4 hook() {
-    float dar = target_size.x / target_size.y,
-          sar = HOOKED_size.x / HOOKED_size.y,
-          h_par = dar / sar,
-          v_par = sar / dar;
+	float dar = target_size.x / target_size.y,
+		  sar = HOOKED_size.x / HOOKED_size.y,
+		  h_par = dar / sar,
+		  v_par = sar / dar;
 
-    vec2 stretchedPos = stretch(HOOKED_pos, h_par, v_par);
+	vec2 stretchedPos = stretch(HOOKED_pos, h_par, v_par);
 
-    // Check what pixels are outside the target boundaries
-    bool outOfBounds = ((any(lessThan(stretchedPos, vec2(0.0))) || any(greaterThan(stretchedPos, vec2(1.0)))) ? true : false);
+	// Check what pixels are outside the target boundaries
+	bool outOfBounds = ((any(lessThan(stretchedPos, vec2(0.0))) || any(greaterThan(stretchedPos, vec2(1.0)))) ? true : false);
 
-    // Black out pixels outside target boundaries
-    return (outOfBounds ? vec4(0.0) : HOOKED_tex(stretchedPos));
+	// Black out pixels outside target boundaries
+	return (outOfBounds ? vec4(0.0) : HOOKED_tex(stretchedPos));
 }
