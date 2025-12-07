@@ -49,13 +49,13 @@
 //!TYPE int
 //!MINIMUM 0
 //!MAXIMUM 99999
-0
+1
 
 //!PARAM dest_height
 //!TYPE int
 //!MINIMUM 0
 //!MAXIMUM 99999
-0
+1
 
 //!HOOK MAIN
 //!BIND HOOKED
