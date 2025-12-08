@@ -59,95 +59,6 @@
 
 //!HOOK MAIN
 //!BIND HOOKED
-//!HEIGHT dest_height
-//!WHEN dest_height MAIN.h > OUTPUT.w OUTPUT.h / dest_width dest_height / = ! *
-//!DESC NLS-Next Prescale Vert
-
-#define R 3.0 //kernel radius, (0.0, 10.0+]
-#define B 0.9812505644269356 //kernel blur, 1.0 means no effect, (0.0, 1.5+]
-#define AR 0.6 //antiringing strength, [0.0, 1.0]
-
-#define M_PI 3.14159265358979323846
-#define M_PI_2 1.57079632679489661923
-#define EPSILON 1.192093e-7
-
-#define sinc(x) (x < EPSILON ? M_PI : sin(M_PI / B * x) * B / x)
-
-#define k(x) (sinc(x) * (x < EPSILON ? M_PI : sin(M_PI / R * x) * R / x))
-
-#define get_weight(x) (x < R ? k(x) : 0.0)
-
-vec4 hook() {
-    float fcoord = fract(HOOKED_pos.y * input_size.y - 0.5);
-    vec2 base = HOOKED_pos - fcoord * HOOKED_pt * vec2(0.0, 1.0);
-    vec4 color;
-    float weight;
-    vec4 csum = vec4(0.0);
-    float wsum = 0.0;
-    vec4 low = vec4(1e9);
-    vec4 high = vec4(-1e9);
-    for (float i = 1.0 - ceil(R); i <= ceil(R); ++i) {
-        weight = get_weight(abs(i - fcoord));
-        color = textureLod(HOOKED_raw, base + HOOKED_pt * vec2(0.0, i), 0.0) * HOOKED_mul;
-        csum += color * weight;
-        wsum += weight;
-        if (AR > 0.0 && i >= 0.0 && i <= 1.0) {
-            low = min(low, color);
-            high = max(high, color);
-        }
-    }
-    csum /= wsum;
-    if (AR > 0.0)
-        csum = mix(csum, clamp(csum, low, high), AR);
-    return csum;
-}
-//!HOOK MAIN
-//!BIND HOOKED
-//!WIDTH dest_width
-//!WHEN dest_width MAIN.w > OUTPUT.w OUTPUT.h / dest_width dest_height / = ! *
-//!DESC NLS-Next Prescale Horiz
-
-#define R 3.0 //kernel radius, (0.0, 10.0+]
-#define B 0.9812505644269356 //kernel blur, 1.0 means no effect, (0.0, 1.5+]
-#define AR 0.6 //antiringing strength, [0.0, 1.0]
-
-#define M_PI 3.14159265358979323846
-#define M_PI_2 1.57079632679489661923
-#define EPSILON 1.192093e-7
-
-#define sinc(x) (x < EPSILON ? M_PI : sin(M_PI / B * x) * B / x)
-
-#define k(x) (sinc(x) * (x < EPSILON ? M_PI : sin(M_PI / R * x) * R / x))
-
-#define get_weight(x) (x < R ? k(x) : 0.0)
-
-vec4 hook() {
-    float fcoord = fract(HOOKED_pos.x * input_size.x - 0.5);
-    vec2 base = HOOKED_pos - fcoord * HOOKED_pt * vec2(1.0, 0.0);
-    vec4 color;
-    float weight;
-    vec4 csum = vec4(0.0);
-    float wsum = 0.0;
-    vec4 low = vec4(1e9);
-    vec4 high = vec4(-1e9);
-    for (float i = 1.0 - ceil(R); i <= ceil(R); ++i) {
-        weight = get_weight(abs(i - fcoord));
-        color = textureLod(HOOKED_raw, base + HOOKED_pt * vec2(i, 0.0), 0.0) * HOOKED_mul;
-        csum += color * weight;
-        wsum += weight;
-        if (AR > 0.0 && i >= 0.0 && i <= 1.0) {
-            low = min(low, color);
-            high = max(high, color);
-        }
-    }
-    csum /= wsum;
-    if (AR > 0.0)
-        csum = mix(csum, clamp(csum, low, high), AR);
-    return csum;
-}
-
-//!HOOK MAIN
-//!BIND HOOKED
 //!WHEN OUTPUT.w OUTPUT.h / dest_width dest_height / = !
 //!DESC NLS-Next Stretch
 
@@ -171,7 +82,7 @@ vec2 stretch(vec2 pos, float h_par, float v_par) {
 
 vec4 hook() {
 	float dar = target_size.x / target_size.y,
-		  sar = HOOKED_size.x / HOOKED_size.y,
+		  sar = (HOOKED_size.x + (dest_width - HOOKED_size.x)) / (HOOKED_size.y + (dest_height - HOOKED_size.y)),
 		  h_par = dar / sar,
 		  v_par = sar / dar;
 
